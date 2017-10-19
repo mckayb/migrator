@@ -1,0 +1,6 @@
+.stack-work
+*.cabal
+migrator-core/.stack-work
+migrator-core/example/.stack-work
+migrator-discover/.stack-work
+migrator-discover/example/.stack-work
