@@ -18,7 +18,7 @@ importsFromBody :: [String] -> [String]
 importsFromBody = filter (\x -> x /= "" && "import " `isPrefixOf` pack x && not ("module " `isPrefixOf` pack x))
 
 nonImportsFromBody :: [String] -> [String]
-nonImportsFromBody = filter (\x -> x /= "" && not ("{-" `isPrefixOf` pack x) && not ("import "  `isPrefixOf` pack x) && not ("module " `isPrefixOf` pack x))
+nonImportsFromBody = filter (\x -> x /= "" && not ("{-" `isPrefixOf` pack x) && not ("import " `isPrefixOf` pack x) && not ("module " `isPrefixOf` pack x))
 
 moduleFromBody :: [String] -> [String]
 moduleFromBody = filter (\x -> "module " `isPrefixOf` pack x)
@@ -50,24 +50,11 @@ run args =
             writeFile dst (mkModule src moduleName imports body)
         _ -> hPutStrLn stderr "Error"
 
--- mkModule :: FilePath -> String -> [String] -> [String] -> String
 mkModule :: FilePath -> String -> String -> String -> String
 mkModule src moduleName imports body =
     ( "{-# LINE 1 " . shows src . " #-}\n"
     . showString "{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}\n"
     . showString moduleName
     . showString imports
-    . showString "\n"
     . showString body
     ) "\n"
-
--- migrationImports :: [String] -> String
--- migrationImports = migModuleText imports
-  -- where imports mig = "import qualified Migrations." <> mig <> " (main)\n"
-
--- migrationBodies :: [String] -> String
--- migrationBodies = migModuleText body
-  -- where body mig = "  Migrations." <> mig <> ".main\n"
-
--- migModuleText :: (String -> String) -> [String] -> String
--- migModuleText f migs = foldl (<>) "" (fmap f migs)
