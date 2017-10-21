@@ -2,30 +2,25 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Migrator.Discover.Run (run) where
 
-import Prelude (String, IO, ShowS, showString, shows, fmap, (.))
-import System.Environment (getProgName)
+import Prelude (Eq, Show, String, IO, ShowS, showString, shows, fmap, foldl, (.))
 import System.IO (FilePath, hPutStrLn, hPrint, stderr, writeFile)
 import System.Directory (listDirectory)
-import System.FilePath.Posix (dropExtension)
+import System.FilePath.Posix (takeDirectory, dropExtension)
 import Data.String (IsString, fromString)
 import Data.List (sort)
-import Debug.Trace (trace)
+import Data.Semigroup ((<>))
 
 instance IsString ShowS where
   fromString = showString
 
 run :: [String] -> IO ()
-run args = do
-    hPrint stderr args
-    name <- getProgName
-    migrationFiles <- listDirectory "./migrations"
-    let modules = fmap dropExtension (sort migrationFiles)
+run args =
     case args of
         src : _ : dst : args' -> do
-            hPutStrLn stderr name
-            hPrint stderr src
-            hPrint stderr modules
-            hPrint stderr args'
+            migrationFiles <- listDirectory (takeDirectory src <> "/Migrations")
+            let modules = fmap dropExtension (sort migrationFiles)
+            hPrint stderr mainBody
+            hPutStrLn stderr (mkModule src modules)
             writeFile dst (mkModule src modules)
         _ -> hPutStrLn stderr "Error"
 
@@ -35,8 +30,25 @@ mkModule src migrations =
     . showString "{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}\n"
     . showString "module Main where\n"
     . showString (migrationImports migrations)
+    . showString "\n"
     . showString "main :: IO ()\n"
-    . showString "main = putStrLn \"Preprocessed! Yay Again Dood22!\""
+    . showString "main = do\n"
+    . showString "  "
+    . showString (migrationBodies migrations)
     ) "\n"
-  where
-    migrationImports migs = let x = trace "BLOOBITY" in ""
+
+qualifiedImport :: String -> String
+qualifiedImport mig = "import qualified Migrations." <> mig <> " (main)\n"
+
+migrationImports :: [String] -> String
+migrationImports migs = foldl (<>) "" (fmap qualifiedImport migs)
+
+migrationBody :: String -> String
+migrationBody mig = "Migrations." <> mig <> ".main"
+
+migrationBodies :: [String] -> String
+migrationBodies migs = foldl (<>) "" (fmap migrationBody migs)
+
+mainBody :: String
+mainBody = "main = do\n"
+    <> "putStrLn \"Preprocessed!\""
