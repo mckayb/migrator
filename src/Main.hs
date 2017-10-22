@@ -11,9 +11,7 @@ import Migrator.Core.Language (test)
 
 main :: IO ()
 main = do
-  test
   cmdLineArgs <- getArgs
-  print cmdLineArgs
   case parseArgs cmdLineArgs of
     Help -> putStrLn "Help"
     Version -> putStrLn "Version"

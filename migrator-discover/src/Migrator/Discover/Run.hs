@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Migrator.Discover.Run (run) where
 
-import Prelude (String, IO, ShowS, showString, shows, fmap, readFile, unlines, lines, filter, not, (/=), (&&), (.))
+import Prelude (String, IO, ShowS, showString, shows, fmap, readFile, unlines, null, lines, filter, not, (/=), (&&), (.))
 import System.IO (FilePath, hPutStrLn, stderr, writeFile)
 import System.Directory (listDirectory)
 import System.FilePath.Posix (takeDirectory, dropExtension)
@@ -31,7 +31,8 @@ run args =
             linesInput <- fmap lines (readFile src)
 
             -- 2) Separate the input file by imports and body
-            let moduleName = unlines (moduleFromBody linesInput)
+            let moduleNameArr = moduleFromBody linesInput
+            let moduleName = if null moduleNameArr then "module Main where \n" else unlines moduleNameArr
             let originalImports = importsFromBody linesInput
             let originalBody = nonImportsFromBody linesInput
 
@@ -56,5 +57,46 @@ mkModule src moduleName imports body =
     . showString "{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}\n"
     . showString moduleName
     . showString imports
+    . mainImports
     . showString body
+    . mainBody
     ) "\n"
+
+mainBody :: String -> String
+mainBody = 
+      showString "main :: IO ()\n"
+    . showString "main = do\n"
+    . showString "  cmdLineArgs <- getArgs\n"
+    . showString "  case parseArgs cmdLineArgs of\n"
+    . showString "    Help -> putStrLn \"Help\"\n"
+    . showString "    Version -> putStrLn \"Version\"\n"
+    . showString "    Cmd Options {cmd = cmd, args = args, flags = flags} ->\n"
+    . showString "      case cmd of\n"
+    . showString "      \"migrate\" -> putStrLn \"Migrating...\"\n"
+    . showString "      \"rollback\" -> putStrLn \"Rolling Back...\"\n"
+    . showString "      \"reset\" -> putStrLn \"Resetting...\"\n"
+    . showString "      \"_\" -> putStrLn \"Help\"\n"
+    . showString "    Error -> do\n"
+    . showString "      putStrLn \"Error\"\n"
+    . showString "      putStrLn \"Help\"\n\n"
+    . showString "parseArgs :: [String] -> ParseResult\n"
+    . showString "parseArgs args = \n"
+    . showString "  case args of\n"
+    . showString "    [] -> Help\n"
+    . showString "    [\"--help\"] -> Help\n"
+    . showString "    [\"--version\"] -> Version\n"
+    . showString "    _ ->\n"
+    . showString "      if null cmds then Error else Cmd Options {cmd = head cmds, args = tail cmds, flags = flags}\n"
+    . showString "  where\n"
+    . showString "    isPrefix pre str = take (length pre) str == pre\n"
+    . showString "    cmds = filter (not . isPrefix \"-\") args\n"
+    . showString "    flags = filter (isPrefix \"-\") args\n\n"
+    . showString "data Options = Options\n"
+    . showString "  { cmd :: String\n"
+    . showString "  , args :: [String]\n"
+    . showString "  , flags :: [String]\n"
+    . showString "  } deriving (Show, Eq)\n\n"
+    . showString "data ParseResult = Help | Version | Cmd Options | Error\n"
+
+mainImports :: String -> String
+mainImports = showString "import System.Environment (getArgs)\n"
