@@ -1,36 +1,19 @@
-{-# LANGUAGE DataKinds #-}
-
 module Migrator.Core.Language where
 
 test :: IO ()
 test = putStrLn "hello world"
 
-data CreateObject a =
-  CreateDatabase String (Maybe [Options a])
-  | CreateTable String (Maybe [Options a])
-  | CreateColumn String String (Maybe [Options a])
+type ColumnName = String
+type TableName = String
 
-data DropObject =
-  DropDatabase String
-  | DropTable String
-  | DropColumn String
+data ColumnDef = ColumnDef { columnName :: ColumnName, columnType :: String, columnOpts :: Maybe [String] } deriving (Eq, Show)
+data TableDef = TableDef { tableName :: TableName, tableColumns :: [ColumnDef], tableOpts :: Maybe [String] } deriving (Eq, Show)
 
-data Expr a b = 
-  Create a b | Alter a b | Drop a
-
-data Options a = Default a | Nullable
-
-type Add = Create
-type Modify = Alter
-
-
--- mig = Alter (Table "blah") Add (Column "col_name" "col_type" Just [Default "blue", Nullable])
--- mig = Alter (Table "blah") Create (Column "col_name" "col_type" Just [Default "blue", Nullable])
--- mig = Alter (Table "blah") Modify (Column "col_name" "col_type" Just [Default "blue", Nullable])
--- mig = Alter (Table "blah") Drop (Column "col_name")
-
--- mig = Create (Table "blah" Nothing)
--- mig = Create (Database "blah" Nothing)
-
--- mig = Drop (Table "blah")
--- mig = Drop (Database "blah")
+data Action =
+  AddColumn TableName ColumnDef
+  | DropColumn TableName ColumnName
+  | AddTable TableDef
+  | DropTable TableName
+  | AlterColumn TableName ColumnName ColumnDef
+  | AlterTable TableName TableDef
+  deriving (Eq, Show)
