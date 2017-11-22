@@ -20,6 +20,8 @@ library:
   source-dirs: src
   exposed-modules:
   - Migrator.Discover.Run
+  - Migrator.Discover.Data
+  - Migrator.Discover.Parse
   dependencies:
   - base >=4.7 && <5
   - directory
