@@ -16,6 +16,7 @@ parse args' =
       "migrate" -> putStrLn "Migrating..."
       "rollback" -> putStrLn "Rolling Back..."
       "reset" -> putStrLn "Resetting..."
+      "status" -> putStrLn "Status of migrations:"
       _ -> putStrLn "Help"
     Error -> do
       putStrLn "Error"

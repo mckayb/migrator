@@ -9,6 +9,7 @@ homepage: https://github.com/githubuser/example#readme
 dependencies:
 - base >=4.7 && <5
 - migrator-discover
+- migrator-core
 executables:
   example:
     main: Main.hs

@@ -1,19 +1,18 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Migrator.Core.Language where
 
-test :: IO ()
-test = putStrLn "hello world"
+import Prelude (String, IO)
+data Migration = Sql String String
+type Schema = [Migration]
 
-type ColumnName = String
-type TableName = String
+data Direction = Up | Down
+type Query = String -> IO ()
 
-data ColumnDef = ColumnDef { columnName :: ColumnName, columnType :: String, columnOpts :: Maybe [String] } deriving (Eq, Show)
-data TableDef = TableDef { tableName :: TableName, tableColumns :: [ColumnDef], tableOpts :: Maybe [String] } deriving (Eq, Show)
+run :: Query -> Direction -> Migration -> IO ()
+run q Up (Sql up _) = q up
+run q Down (Sql _ down) = q down
 
-data Action =
-  AddColumn TableName ColumnDef
-  | DropColumn TableName ColumnName
-  | AddTable TableDef
-  | DropTable TableName
-  | AlterColumn TableName ColumnName ColumnDef
-  | AlterTable TableName TableDef
-  deriving (Eq, Show)
+-- Need a few things:
+-- First, I need a way to run queries on the database
+-- Second, I need a way to keep track of which queries have already been ran
